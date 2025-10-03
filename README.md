@@ -1,4 +1,5 @@
-# Romeo and Juliet Party Quest Helper (로묘파퀘 도우미, RJPQH)
+# Romeo and Juliet Party Quest Helper 
+# (로묘파퀘 도우미, RJPQH)
 
 메이플랜드 로미오와 줄리엣 파티 퀘스트 4단계를 원활하게 클리어할 수 있도록 돕는 웹 기반 보조 프로그램입니다. 
 파티원들이 각자 알아낸 정답 발판을 입력하면, 나머지 파티원의 정답을 자동으로 추론하여 시각적으로 보여줍니다.
