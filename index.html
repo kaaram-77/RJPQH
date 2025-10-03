@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로묘파퀘 도우미</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            gap: 20px;
+        }
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+        .container.grid-container {
+             max-width: 500px;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .party-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .party-input label {
+            font-weight: bold;
+            width: 120px;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .party-input .color-box {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        /* 파티원별 색상 견본 */
+        .party1 .color-box { background-color: #4dabf7; }
+        .party2 .color-box { background-color: #74b816; }
+        .party3 .color-box { background-color: #f76707; }
+        .party4 .color-box { background-color: #f06595; }
+
+        .party-name {
+            cursor: text;
+            padding: 2px 5px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+            outline: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .party-name:focus {
+            background-color: #eefbff;
+            box-shadow: 0 0 0 2px rgba(59, 201, 219, 0.5);
+        }
+
+        .party-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .clear-btn, .copy-btn, #copy-deduced-btn {
+            background: transparent;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        .clear-btn:hover, .copy-btn:hover, #copy-deduced-btn:hover {
+            color: #000;
+            background-color: #f1f3f5;
+            border-color: #999;
+        }
+        .clear-btn svg, .copy-btn svg, #copy-deduced-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+        .copy-btn.copied, #copy-deduced-btn.copied {
+            color: #2b8a3e; /* green */
+            border-color: #2b8a3e;
+        }
+        
+        #grid-canvas {
+            width: 100%;
+            height: auto;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .deduced-section {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: none; /* Hide by default */
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #deduced-output-label {
+            font-weight: bold;
+            font-size: 14px;
+            color: #555;
+            flex-shrink: 0;
+        }
+        #deduced-output {
+            font-family: Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
+            letter-spacing: 1.5px;
+            font-weight: bold;
+            background-color: #fff;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            flex-grow: 1;
+            font-size: 16px;
+            color: #333;
+            min-height: 20px;
+            text-align: left;
+            word-break: break-all;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="input-section">
+            <div class="party-input party1">
+                <label>
+                    <span class="color-box"></span>
+                    <span id="party1-name" class="party-name" contenteditable="true">파티원 1</span>
+                </label>
+                <input type="text" id="party1-input" placeholder="예: 13421...">
+                <button class="copy-btn" aria-label="입력 내용 복사">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <button class="clear-btn" aria-label="입력 내용 삭제">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            </div>
+            <div class="party-input party2">
+                <label>
+                    <span class="color-box"></span>
+                    <span id="party2-name" class="party-name" contenteditable="true">파티원 2</span>
+                </label>
+                <input type="text" id="party2-input" placeholder="예: 21134...">
+                <button class="copy-btn" aria-label="입력 내용 복사">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <button class="clear-btn" aria-label="입력 내용 삭제">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            </div>
+            <div class="party-input party3">
+                <label>
+                    <span class="color-box"></span>
+                    <span id="party3-name" class="party-name" contenteditable="true">파티원 3</span>
+                </label>
+                <input type="text" id="party3-input" placeholder="예: 32213...">
+                <button class="copy-btn" aria-label="입력 내용 복사">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <button class="clear-btn" aria-label="입력 내용 삭제">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            </div>
+            <div class="party-input party4">
+                <label>
+                    <span class="color-box"></span>
+                    <span id="party4-name" class="party-name" contenteditable="true">파티원 4</span>
+                </label>
+                <input type="text" id="party4-input" placeholder="예: 44342...">
+                <button class="copy-btn" aria-label="입력 내용 복사">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                 <button class="clear-btn" aria-label="입력 내용 삭제">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container grid-container">
+        <canvas id="grid-canvas"></canvas>
+        <div class="deduced-section">
+            <span id="deduced-output-label">추정 경로:</span>
+            <code id="deduced-output"></code>
+            <button id="copy-deduced-btn" aria-label="추정 순서 복사">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('grid-canvas');
+            const ctx = canvas.getContext('2d');
+            const inputs = [
+                document.getElementById('party1-input'),
+                document.getElementById('party2-input'),
+                document.getElementById('party3-input'),
+                document.getElementById('party4-input'),
+            ];
+            const nameSpans = [
+                document.getElementById('party1-name'),
+                document.getElementById('party2-name'),
+                document.getElementById('party3-name'),
+                document.getElementById('party4-name'),
+            ];
+            const clearButtons = document.querySelectorAll('.clear-btn');
+            const copyButtons = document.querySelectorAll('.copy-btn');
+            const deducedOutput = document.getElementById('deduced-output');
+            const copyDeduceBtn = document.getElementById('copy-deduced-btn');
+            const deducedOutputLabel = document.getElementById('deduced-output-label');
+            const deducedSection = document.querySelector('.deduced-section');
+
+            const partyColors = {
+                p1: { fill: '#a5d8ff', stroke: '#4dabf7' },
+                p2: { fill: '#b2f2bb', stroke: '#74b816' },
+                p3: { fill: '#ffc078', stroke: '#f76707' },
+                p4: { fill: '#fcc2d7', stroke: '#f06595' }
+            };
+            const deducedColor = { fill: '#fff3bf', stroke: '#f59f00' };
+            const errorColor = { stroke: '#e03131', text: '#c92a2a' };
+
+
+            const NUM_ROWS = 10;
+            const NUM_COLS = 4;
+
+            let colWidth, rowHeight, headerWidth, headerHeight;
+
+            function setupCanvas() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                const aspectRatio = (NUM_ROWS + 1) / (NUM_COLS + 1) * 0.325;
+                canvas.height = (rect.width * aspectRatio) * dpr;
+                canvas.style.height = `${rect.width * aspectRatio}px`;
+                ctx.scale(dpr, dpr);
+
+                const newRect = canvas.getBoundingClientRect();
+                headerWidth = newRect.width / dpr * 0.15;
+                headerHeight = (newRect.height / dpr) / (NUM_ROWS + 1);
+                colWidth = (newRect.width / dpr - headerWidth) / NUM_COLS;
+                rowHeight = (newRect.height / dpr) / (NUM_ROWS + 1);
+                
+                draw();
+            }
+
+            function draw() {
+                const canvasRect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                ctx.clearRect(0, 0, canvasRect.width * dpr, canvasRect.height * dpr);
+
+                const gridState = Array(NUM_ROWS).fill(0).map(() => Array(NUM_COLS).fill(0).map(() => []));
+                const deducedSequence = Array(NUM_ROWS).fill(null);
+                const deducedPartyPerFloor = Array(NUM_ROWS).fill(null);
+
+                inputs.forEach((input, partyIndex) => {
+                    const partyNum = partyIndex + 1;
+                    const values = input.value.replace(/[^1-4]/g, '');
+                    for (let i = 0; i < values.length && i < NUM_ROWS; i++) {
+                        const platform = parseInt(values[i], 10) - 1;
+                        if (platform >= 0 && platform < NUM_COLS) {
+                            gridState[i][platform].push(partyNum);
+                        }
+                    }
+                });
+
+                drawHeaders();
+
+                for (let row = 0; row < NUM_ROWS; row++) {
+                    let validlyTakenPlatforms = [];
+                    let hasErrorOnRow = false;
+                    
+                    for(let col = 0; col < NUM_COLS; col++) {
+                        if (gridState[row][col].length > 1) {
+                            hasErrorOnRow = true;
+                            break;
+                        }
+                    }
+
+                    for (let col = 0; col < NUM_COLS; col++) {
+                        const partiesInCell = gridState[row][col];
+                        if (partiesInCell.length === 1) {
+                            drawCell(row, col, partiesInCell[0], false);
+                            validlyTakenPlatforms.push(col);
+                        } else if (partiesInCell.length > 1) {
+                            drawErrorCell(row, col, partiesInCell);
+                        }
+                    }
+
+                    if (!hasErrorOnRow && validlyTakenPlatforms.length === 3) {
+                        const remainingCol = [0, 1, 2, 3].find(c => !validlyTakenPlatforms.includes(c));
+                        const allParties = [1, 2, 3, 4];
+                        const placedParties = [];
+                        for (let col = 0; col < NUM_COLS; col++) {
+                            if(gridState[row][col].length === 1) {
+                                placedParties.push(gridState[row][col][0]);
+                            }
+                        }
+                        const remainingParty = allParties.find(p => !placedParties.includes(p));
+                        
+                        if (remainingCol !== undefined && remainingParty !== undefined) {
+                            drawCell(row, remainingCol, remainingParty, true);
+                            deducedSequence[row] = remainingCol + 1;
+                            deducedPartyPerFloor[row] = remainingParty;
+                        }
+                    }
+                }
+                
+                const deducedCounts = deducedPartyPerFloor.reduce((acc, party) => {
+                    if (party !== null) acc[party] = (acc[party] || 0) + 1;
+                    return acc;
+                }, {});
+
+                let primaryDeducedParty = null;
+                let maxCount = 0;
+                for (const party in deducedCounts) {
+                    if (deducedCounts[party] > maxCount) {
+                        maxCount = deducedCounts[party];
+                        primaryDeducedParty = parseInt(party, 10);
+                    }
+                }
+                
+                let fullPathSequence = '';
+                if (primaryDeducedParty !== null) {
+                    const partyInput = inputs[primaryDeducedParty - 1].value.replace(/[^1-4]/g, '');
+                    const fullPath = Array(NUM_ROWS).fill(null);
+
+                    for (let i = 0; i < partyInput.length; i++) {
+                        fullPath[i] = partyInput[i];
+                    }
+
+                    for (let i = 0; i < NUM_ROWS; i++) {
+                        if (deducedPartyPerFloor[i] === primaryDeducedParty) {
+                            fullPath[i] = deducedSequence[i];
+                        }
+                    }
+                    
+                    const partyName = (nameSpans[primaryDeducedParty - 1].textContent.trim() || `파티원 ${primaryDeducedParty}`).substring(0,5);
+                    deducedOutputLabel.textContent = `${partyName} :`;
+                    fullPathSequence = fullPath.filter(p => p !== null).join('');
+                } else {
+                    deducedOutputLabel.textContent = '추정 경로:';
+                }
+
+                if (fullPathSequence) {
+                    deducedSection.style.display = 'flex';
+                    updateDeductionOutput(fullPathSequence);
+                } else {
+                    deducedSection.style.display = 'none';
+                    updateDeductionOutput('');
+                }
+            }
+            
+            function drawHeaders() {
+                ctx.fillStyle = '#555';
+                ctx.font = `bold ${Math.min(colWidth / 5.5, 14)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                for (let i = 0; i < NUM_ROWS; i++) {
+                    const visualRow = NUM_ROWS - 1 - i;
+                    const y = headerHeight * (visualRow + 1.5);
+                    ctx.fillText(`${i + 1}층`, headerWidth / 2, y);
+                }
+
+                for (let i = 0; i < NUM_COLS; i++) {
+                    const x = headerWidth + colWidth * (i + 0.5);
+                    ctx.fillText(`발판 ${i + 1}`, x, headerHeight / 2);
+                }
+            }
+
+            function drawCell(row, col, partyNum, isDeduced) {
+                const visualRow = NUM_ROWS - 1 - row;
+                const x = headerWidth + col * colWidth;
+                const y = headerHeight * (visualRow + 1);
+                const padding = 4;
+                const radius = 5;
+
+                const colors = isDeduced ? deducedColor : partyColors[`p${partyNum}`];
+                
+                ctx.beginPath();
+                ctx.moveTo(x + padding + radius, y + padding);
+                ctx.lineTo(x + colWidth - padding - radius, y + padding);
+                ctx.quadraticCurveTo(x + colWidth - padding, y + padding, x + colWidth - padding, y + padding + radius);
+                ctx.lineTo(x + colWidth - padding, y + rowHeight - padding - radius);
+                ctx.quadraticCurveTo(x + colWidth - padding, y + rowHeight - padding, x + colWidth - padding - radius, y + rowHeight - padding);
+                ctx.lineTo(x + padding + radius, y + rowHeight - padding);
+                ctx.quadraticCurveTo(x + padding, y + rowHeight - padding, x + padding, y + rowHeight - padding - radius);
+                ctx.lineTo(x + padding, y + padding + radius);
+                ctx.quadraticCurveTo(x + padding, y + padding, x + padding + radius, y + padding);
+                ctx.closePath();
+                
+                ctx.fillStyle = colors.fill;
+                ctx.fill();
+
+                ctx.strokeStyle = colors.stroke;
+                ctx.lineWidth = 2;
+                if(isDeduced) ctx.setLineDash([5, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = isDeduced ? '#d9480f' : '#333';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                let text;
+                if(isDeduced) {
+                    ctx.font = `bold ${Math.min(colWidth / 7, 11)}px sans-serif`;
+                    const partyName = (nameSpans[partyNum - 1].textContent.trim() || `P${partyNum}`).substring(0, 5);
+                    text = `${partyName}추정`;
+                } else {
+                    ctx.font = `bold ${Math.min(colWidth / 5.5, 14)}px sans-serif`;
+                    text = (nameSpans[partyNum - 1].textContent.trim() || `P${partyNum}`).substring(0, 5);
+                }
+                
+                ctx.fillText(text, x + colWidth / 2, y + rowHeight / 2);
+            }
+
+            function drawErrorCell(row, col, parties) {
+                const visualRow = NUM_ROWS - 1 - row;
+                const x = headerWidth + col * colWidth;
+                const y = headerHeight * (visualRow + 1);
+                const padding = 4;
+                const radius = 5;
+            
+                ctx.beginPath();
+                ctx.moveTo(x + padding + radius, y + padding);
+                ctx.lineTo(x + colWidth - padding - radius, y + padding);
+                ctx.quadraticCurveTo(x + colWidth - padding, y + padding, x + colWidth - padding, y + padding + radius);
+                ctx.lineTo(x + colWidth - padding, y + rowHeight - padding - radius);
+                ctx.quadraticCurveTo(x + colWidth - padding, y + rowHeight - padding, x + colWidth - padding - radius, y + rowHeight - padding);
+                ctx.lineTo(x + padding + radius, y + rowHeight - padding);
+                ctx.quadraticCurveTo(x + padding, y + rowHeight - padding, x + padding, y + rowHeight - padding - radius);
+                ctx.lineTo(x + padding, y + padding + radius);
+                ctx.quadraticCurveTo(x + padding, y + padding, x + padding + radius, y + padding);
+                ctx.closePath();
+            
+                ctx.save();
+                ctx.clip();
+            
+                const contentWidth = colWidth - padding * 2;
+                const stripWidth = contentWidth / parties.length;
+                parties.forEach((pNum, index) => {
+                    ctx.fillStyle = partyColors[`p${pNum}`].fill;
+                    ctx.fillRect(x + padding + index * stripWidth, y + padding, stripWidth, rowHeight - padding * 2);
+                });
+            
+                ctx.restore();
+            
+                ctx.strokeStyle = errorColor.stroke;
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([4, 2]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            
+                ctx.fillStyle = errorColor.text;
+                ctx.font = `bold ${Math.min(colWidth / 5.5, 12)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('입력오류', x + colWidth / 2, y + rowHeight / 2);
+            }
+            
+            function updateDeductionOutput(sequence) {
+                if (sequence) {
+                    const formattedSequence = (sequence.match(/.{1,3}/g) || []).join('/');
+                    deducedOutput.textContent = formattedSequence;
+                } else {
+                    deducedOutput.textContent = '';
+                }
+            }
+            
+            const copyIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+            const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+            function copyTextToClipboard(text, button) {
+                if (!text) return;
+                 const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'absolute';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    button.innerHTML = checkIconSVG;
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.innerHTML = copyIconSVG;
+                        button.classList.remove('copied');
+                    }, 1500);
+                } catch (err) {
+                    console.error('클립보드 복사에 실패했습니다.', err);
+                }
+                document.body.removeChild(textArea);
+            }
+
+            inputs.forEach(input => input.addEventListener('input', draw));
+
+            nameSpans.forEach(span => {
+                span.addEventListener('click', () => {
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(span);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                });
+                span.addEventListener('input', draw);
+                span.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        span.blur();
+                    }
+                });
+                span.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                    document.execCommand('insertText', false, text);
+                });
+            });
+
+            clearButtons.forEach((button, index) => {
+                button.addEventListener('click', () => {
+                    inputs[index].value = '';
+                    inputs[index].focus();
+                    draw();
+                });
+            });
+
+            copyButtons.forEach((button, index) => {
+                button.addEventListener('click', () => {
+                    copyTextToClipboard(inputs[index].value, button);
+                });
+            });
+            
+            copyDeduceBtn.addEventListener('click', () => {
+                copyTextToClipboard(deducedOutput.textContent, copyDeduceBtn);
+            });
+
+            window.addEventListener('resize', setupCanvas);
+            requestAnimationFrame(setupCanvas);
+        });
+    </script>
+</body>
+</html>
+
